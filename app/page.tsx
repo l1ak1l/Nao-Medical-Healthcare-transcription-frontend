@@ -70,7 +70,7 @@ export default function Home() {
       formData.append('target_lang', targetLanguage);
 
       // Add this at the top of your component
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:2000";
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://nao-medical-healthcare-api.vercel.app";
 
       // Update the processAudio function's fetch call
       const response = await fetch(`${BACKEND_URL}/api/v1/medical-translate?${generateCacheBuster()}`, {
