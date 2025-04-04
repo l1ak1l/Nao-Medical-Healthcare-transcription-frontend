@@ -70,7 +70,7 @@ export default function Home() {
       formData.append('target_lang', targetLanguage);
 
       // Add this at the top of your component
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://parabolic-grid-391112.de.r.appspot.com";
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://medical-translation-api.onrender.com";
 
       // Update the processAudio function's fetch call
       const response = await fetch(`${BACKEND_URL}/api/v1/medical-translate?${generateCacheBuster()}`, {
