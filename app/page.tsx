@@ -56,48 +56,58 @@ export default function Home() {
   
 
   const processAudio = async () => {
-    setIsProcessing(true);
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const formData = new FormData();
-      
-      formData.append(
-        'audio_file', 
-        audioBlob, 
-        `recording_${Date.now()}.webm`  // Explicit extension
-      );
-      formData.append('source_lang', sourceLanguage);
-      formData.append('target_lang', targetLanguage);
+  setIsProcessing(true);
+  try {
+    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    const formData = new FormData();
+    
+    formData.append('audio_file', audioBlob, `recording_${Date.now()}.webm`);
+    formData.append('source_lang', sourceLanguage);
+    formData.append('target_lang', targetLanguage);
 
-      // Add this at the top of your component
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://medical-translation-api.onrender.com";
+    const BACKEND_URL = 'https://dd68-2400-adc5-1c3-f00-b12c-ca96-df06-dc29.ngrok-free.app'
+    const endpoint = `${BACKEND_URL}/api/v1/medical-translate?${generateCacheBuster()}`;
 
-      // Update the processAudio function's fetch call
-      const response = await fetch(`${BACKEND_URL}/api/v1/medical-translate?${generateCacheBuster()}`, {
-        method: 'POST',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        },
-        body: formData
-});
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      
-      const result: TranslationResult = await response.json();
-      
-      setSourceText(result.source_transcription);
-      setTranslatedText(result.translated_text);
-      setAudioUrl(`${result.tts_audio_url}?${generateCacheBuster()}`);
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      body: formData
+    });
 
-    } catch (error) {
-      console.error("Processing error:", error);
-      alert("Translation failed. Please try again.");
-    } finally {
-      setIsProcessing(false);
-      audioChunksRef.current = [];
-    }
-  };
+    // Log raw response status and headers
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    
+    const result: TranslationResult = await response.json();
+    
+    // Log the complete response payload
+    console.log('Full API Response:', result);
+    
+    // Log specific audio URL from response
+    console.log('Raw Audio URL from API:', result.tts_audio_url);
+
+    setSourceText(result.source_transcription);
+    setTranslatedText(result.translated_text);
+    
+    // Create and log final audio URL with cache buster
+    const finalAudioUrl = `${result.tts_audio_url}${generateCacheBuster()}`;
+    console.log('Final Audio URL with cache:', finalAudioUrl);
+    setAudioUrl(result.tts_audio_url);
+
+  } catch (error) {
+    console.error("Processing error:", error);
+    alert("Translation failed. Please try again.");
+  } finally {
+    setIsProcessing(false);
+    audioChunksRef.current = [];
+  }
+};
 
   const startRecording = async () => {
     try {
@@ -231,13 +241,22 @@ export default function Home() {
                 {translatedText || "Translation will appear here"}
               </div>
               {audioUrl && (
-                <div className="flex items-center gap-2 mt-4">
-                  <audio 
-                    controls 
-                    className="w-full"
-                    src={audioUrl}  // Use URL directly from backend
-                  />
-                  
+                <div className="absolute bottom-4 right-4">
+                  <button
+                    onClick={() => audioRef.current?.play()}
+                    className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+                    aria-label="Play translated audio"
+                  >
+                    <Volume2 className="h-6 w-6 text-black" />
+                  </button>
+                  <audio
+                    ref={audioRef}
+                    className="hidden"
+                    controls
+                    onEnded={() => audioRef.current?.pause()}
+                  >
+                    <source src={audioUrl} type="audio/mpeg" />
+                  </audio>
                 </div>
               )}
             </Card>
